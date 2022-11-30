@@ -1,0 +1,12 @@
+*.iml
+*.ipr
+*.iws
+.gradle
+.idea
+build
+out
+demo
+workout/*
+classes
+dev/
+
