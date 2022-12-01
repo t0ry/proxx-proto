@@ -61,6 +61,8 @@ class Utils {
             { Board actualBoard, int hitFlatIndex ->
                 assert actualBoard.getCellContent(hitFlatIndex / actualBoard.getBoardSide() as int, hitFlatIndex % actualBoard.getBoardSide()) == Board.HOLE
                 assert actualBoard.isBoardFailed()
+                assert !actualBoard.isBoardSucceeded()
+                assert !actualBoard.isBoardInProgress()
                 //all cells are open
                 (0..actualBoard.getBoardSide() * actualBoard.getBoardSide() - 1).each {
                     if (actualBoard.isHoleCell(((int) (it / actualBoard.getBoardSide())), it % actualBoard.getBoardSide())) {
@@ -74,6 +76,7 @@ class Utils {
             { Board actualBoard, int hitFlatIndex ->
                 assert actualBoard.getCellContent(hitFlatIndex / actualBoard.getBoardSide() as int, hitFlatIndex % actualBoard.getBoardSide()) == 0
                 assert !actualBoard.isBoardFailed()
+                assert actualBoard.isBoardSucceeded() || actualBoard.isBoardInProgress()
 
                 validateEmptySurrounding(actualBoard, hitFlatIndex, new HashSet<>())
                 return true
@@ -83,6 +86,7 @@ class Utils {
             { Board actualBoard, int hitFlatIndex ->
                 assert actualBoard.getCellContent(hitFlatIndex / actualBoard.getBoardSide() as int, hitFlatIndex % actualBoard.getBoardSide()) > 0
                 assert !actualBoard.isBoardFailed()
+                assert actualBoard.isBoardSucceeded() || actualBoard.isBoardInProgress()
 
                 // exact cell under hit is open
                 assert actualBoard.isCellOpen(hitFlatIndex / actualBoard.getBoardSide() as int, hitFlatIndex % actualBoard.getBoardSide())
@@ -127,6 +131,25 @@ class Utils {
             validateEmptySurrounding(board, row, col, validatedFlatIndexes)
         }
 
+    }
+
+    private static Board runHitsStepOverHoles(Board initialBoard, int flatHoleIndex) {
+        Board board = null
+        for (int i = 0; i < initialBoard.getBoardSide() * initialBoard.getBoardSide(); i++) {
+            // gracefully step over the hole
+            if (i == flatHoleIndex) {
+                continue;
+            }
+
+            //hit empty or adjacent cell
+            board = initialBoard.hitCell(i / initialBoard.getBoardSide() as int, i % initialBoard.getBoardSide())
+
+            if (board.isBoardSucceeded()) {
+                break;
+            }
+
+        }
+        return board
     }
 
     static void printBoard(Board board) {

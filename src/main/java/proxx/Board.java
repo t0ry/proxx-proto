@@ -28,17 +28,24 @@ public final class Board {
     private static final BiPredicate<Integer, Integer> OUT_OF_BORDER_UPPER_INCLUSION
             = (value, border) -> BELOW_ZERO.test(value) || ABOVE_BORDER.test(value, border - 1);
 
+    private enum BoardState {
+        FAILED, IN_PROGRESS, SUCCEEDED
+    }
+
     private final int[] board;
     private final boolean[] cellsOpenState;
+    private final int holesNumber;
     private final int boardSide;
 
-    private boolean failed; //board state
+    private int openCellsCount;
 
+    private BoardState boardState = BoardState.IN_PROGRESS;
 
-    private Board(final int boardSize) {
+    private Board(final int boardSize, final int holesNumber) {
         this.board = new int[boardSize * boardSize]; // all empty initially
         this.cellsOpenState = new boolean[boardSize * boardSize]; // all closed initially
         this.boardSide = boardSize;
+        this.holesNumber = holesNumber;
     }
 
     private static Set<Integer> generateHolesPositions(final int holeNumbers, final int range) {
@@ -74,7 +81,7 @@ public final class Board {
                     holesNumber));
         }
 
-        final Board board = new Board(boardSize);
+        final Board board = new Board(boardSize, holesNumber);
         board.placeHoles(holesNumber);
 
         return board;
@@ -107,7 +114,6 @@ public final class Board {
             adjustCell((i + 1), j);
             adjustCell((i + 1), (j + 1));
         }
-
         return board;
     }
 
@@ -141,7 +147,6 @@ public final class Board {
         if (board[flatPosition] == HOLE) {
             processHole();
         }
-
         // cell is adjacent to hole(s) - just open
         else if (board[flatPosition] > 0) {
             processAdjacent(flatPosition);
@@ -150,6 +155,13 @@ public final class Board {
         else if (board[flatPosition] == EMPTY) {
             cellsOpenState[flatPosition] = true;
             processEmpty(row, col);
+        }
+
+        openCellsCount++;
+
+        // if no hits on holes happened and all cells except holes are open - win the board
+        if (!isBoardFailed() && (openCellsCount == cellsOpenState.length - holesNumber)) {
+            boardState = BoardState.SUCCEEDED;
         }
 
         return this;
@@ -181,7 +193,7 @@ public final class Board {
                 cellsOpenState[i] = true;
             }
         }
-        this.failed = true;
+        this.boardState = BoardState.FAILED;
     }
 
     private void assertIndexes(final int row, final int col) {
@@ -230,11 +242,11 @@ public final class Board {
     /**
      * Provides content for the cell in position (<code>row</code>,  <code>col</code>).
      * If a is array of contents then
-     * <code>
-     * a[i]==-1 means a hole
-     * a[i]== 0 means an empty cell
-     * a[i]== 1..8 means number of adjacent holes around the cell
-     * </code>
+     * <ul>
+     * <li>a[i]==-1 means a hole
+     * <li>a[i]== 0 means an empty cell
+     * <li>a[i]== 1..8 means number of adjacent holes around the cell
+     * </ul>
      *
      * @return cell content
      */
@@ -251,7 +263,22 @@ public final class Board {
      * Indicates if hole cell has been hit.
      */
     public boolean isBoardFailed() {
-        return failed;
+        return boardState == BoardState.FAILED;
+    }
+
+    /**
+     * Indicates if board (game) is still in progress: no hits on holes, not all hon-hole cells got open.
+     */
+    public boolean isBoardInProgress() {
+        return boardState == BoardState.IN_PROGRESS;
+    }
+
+
+    /**
+     * Indicates if board (game) is succeeded: no hits on holes, all hon-hole cells got open.
+     */
+    public boolean isBoardSucceeded() {
+        return boardState == BoardState.SUCCEEDED;
     }
 
     /**
@@ -264,7 +291,7 @@ public final class Board {
         assertIndexes(row, col);
 
         // nothing to do if board has already failed.
-        if (failed) {
+        if (isBoardFailed()) {
             return this;
         }
 

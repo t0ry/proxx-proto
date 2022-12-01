@@ -56,7 +56,7 @@ class BoardPositiveTest extends Specification {
     @Unroll
     def "must return true/false if isCellOpen() invoked on open/closed cell"() {
         given:
-        int boardSize = 5
+        int boardSize = 10
         int holesNumber = 10
         Board board = Board.initWith(boardSize, holesNumber)
         int flatAdjacentIndex = (0..boardSize * boardSize - 1).findAll { it -> adjacentIndexPredicate it, board }[0]
@@ -75,7 +75,7 @@ class BoardPositiveTest extends Specification {
     @Unroll
     def "must return #expected if isHoleCell(..) invoked on #cellContent cell"() {
         given:
-        int boardSize = 5
+        int boardSize = 10
         int holesNumber = 5
         Board board = Board.initWith(boardSize, holesNumber)
         int flatIndex = (0..boardSize * boardSize - 1).findAll { it -> indexPredicate it, board }[0]
@@ -97,7 +97,7 @@ class BoardPositiveTest extends Specification {
     @Unroll
     def "must return #expected if isEmptyCell(..) invoked on #cellContent cell"() {
         given:
-        int boardSize = 5
+        int boardSize = 10
         int holesNumber = 5
         Board board = Board.initWith(boardSize, holesNumber)
         int flatIndex = (0..boardSize * boardSize - 1).findAll { it -> indexPredicate it, board }[0]
@@ -119,8 +119,8 @@ class BoardPositiveTest extends Specification {
     @Unroll
     def "must return #expected if isAdjacentCell(..) invoked on #cellContent cell"() {
         given:
-        int boardSize = 5
-        int holesNumber = 5
+        int boardSize = 10
+        int holesNumber = 3
         Board board = Board.initWith(boardSize, holesNumber)
         int flatIndex = (0..boardSize * boardSize - 1).findAll { it -> indexPredicate it, board }[0]
 
@@ -141,7 +141,7 @@ class BoardPositiveTest extends Specification {
     @Unroll
     def "must return cell content if getCellContent(..) invoked on #cellContent cell"() {
         given:
-        int boardSize = 5
+        int boardSize = 10
         int holesNumber = 5
         Board board = Board.initWith(boardSize, holesNumber)
         int flatIndex = (0..boardSize * boardSize - 1).findAll { it -> indexPredicate it, board }[0]
@@ -213,5 +213,25 @@ class BoardPositiveTest extends Specification {
         then:
         List actualOpenFlatIndexesAfterThirdHit = (0..boardSize * boardSize - 1).findAll { it -> openIndexPredicate it, actualBoardAfterThirdHitOnClosedCell }
         assert actualOpenFlatIndexesAfterThirdHit == expectedOpenFlatIndexes
+    }
+
+    @Unroll
+    def "must win the board when all cells except holes are open"() {
+        given:
+        int boardSize = 5
+        int holesNumber = 1
+
+        Board initialBoard = Board.initWith(boardSize, holesNumber)
+
+        int flatHoleIndex = (0..boardSize * boardSize - 1).findAll { it -> holeIndexPredicate it, initialBoard }[0]
+
+        when:
+        Board board = runHitsStepOverHoles(initialBoard, flatHoleIndex)
+
+        then:
+        int actualOpenNumber = (0..boardSize * boardSize - 1).findAll { it -> openIndexPredicate it, board }.size()
+        assert actualOpenNumber == (boardSize * boardSize - holesNumber)
+        assert !board.isBoardFailed()
+        assert !board.isBoardInProgress()
     }
 }
